@@ -11,7 +11,7 @@ add_executable(${COMPONENT_NAME} ${SOURCES})
 target_link_libraries(${COMPONENT_NAME} pthread cmocka cjson)
 install(TARGETS ${COMPONENT_NAME} DESTINATION usr/bin/)
 file(GLOB  INSTALLFILES "*.conf")
-install(FILES ${INSTALLFILES} DESTINATION etc/)
+install(FILES ${INSTALLFILES} DESTINATION etc/supervisor.d/)
 
 
 #for cross compiling
