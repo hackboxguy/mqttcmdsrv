@@ -1,0 +1,12 @@
+{
+	"triggers":
+	[
+	{"idx": 1, "key":"svalue1", "value":  "0", "trig":"echo 1 > /tmp/trig.txt"},
+	{"idx": 2, "key":"svalue1", "value":  "0", "trig":"echo 2 > /tmp/trig.txt"},
+	{"idx": 3, "key":"svalue1", "value":  "0", "trig":"echo 3 > /tmp/trig.txt"},
+	{"idx": 3, "key":"svalue1", "value": "10", "trig":"echo 4 > /tmp/trig.txt"},
+	{"idx": 3, "key":"svalue1", "value": "20", "trig":"echo 5 > /tmp/trig.txt"},
+	{"idx": 3, "key":"svalue1", "value": "30", "trig":"echo 6 > /tmp/trig.txt"},
+	{"idx": 3, "key":"svalue1", "value": "40", "trig":"echo 7 > /tmp/trig.txt"}
+	]
+}
