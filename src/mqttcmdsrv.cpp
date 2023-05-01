@@ -1,5 +1,5 @@
 //Disclaimer: this code is taken from https://github.com/LiamBindle/MQTT-C.git
-
+//e.g run this command as: /usr/bin/mqttcmdsrv 172.29.1.1 1883 domoticz/out /etc/mqttcmdtrig.json
 /**
  * @file
  * A simple subscriber program that performs automatic reconnections.
@@ -36,8 +36,10 @@ struct TrigEntry
         std::string Key;
         std::string Value;
         std::string Trig;
+        std::string Out;
+        std::string Custm;
 public:
-        TrigEntry(int idx,std::string key,std::string value, std::string trig) :Idx(idx),Key(key),Value(value),Trig(trig){}
+        TrigEntry(int idx,std::string key,std::string value, std::string trig,std::string out,std::string custm) :Idx(idx),Key(key),Value(value),Trig(trig),Out(out),Custm(custm){}
 };
 std::deque<TrigEntry> TrigEntryList;
 /**
@@ -234,12 +236,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
         free(topic_value);
         return;//invalid json data
     }
-    //const cJSON *topic = cJSON_GetObjectItemCaseSensitive(pub_data, "topic");
-    //if (cJSON_IsString(topic) && (topic->valuestring != NULL))
-    //{
-        //printf("topic is: \"%s\"\n", topic->valuestring);
-    //    resTopic = topic->valuestring;
-    //}
+
     cJSON *idx   = cJSON_GetObjectItemCaseSensitive(pub_data, "idx");
     if ( !cJSON_IsNumber(idx) )// || !cJSON_IsString(key)|| !cJSON_IsString(value) || !cJSON_IsString(trig) )
     {
@@ -264,7 +261,23 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
             }
             if(strcmp(value->valuestring,TrigEntryList[i].Value.c_str()) == 0 )
             {
-                system(TrigEntryList[i].Trig.c_str());//trigger the related script or command
+                std::string outstr = TrigEntryList[i].Out;
+                std::string custstr = "";
+                if(TrigEntryList[i].Custm != "")
+                {
+                    cJSON *cust   = cJSON_GetObjectItemCaseSensitive(pub_data, TrigEntryList[i].Custm.c_str());
+                    if ( cJSON_IsString(cust) )
+                    {
+                            custstr = cust->valuestring;
+                            char cmdstr[1024];
+                            //store the custom-value in a /tmp/ file mentioned in json config
+                            sprintf(cmdstr,"echo \"%s\" > %s",custstr.c_str(),outstr.c_str());
+                            system(cmdstr);
+                            system(TrigEntryList[i].Trig.c_str());//trigger the related script or command
+                    }
+                }
+                else
+                    system(TrigEntryList[i].Trig.c_str());//trigger the related script or command
             }
         }
     }
@@ -330,6 +343,8 @@ int parseJsonConfig(const char* conffile,std::deque<TrigEntry> &TriggerList)
         cJSON *key   = cJSON_GetObjectItemCaseSensitive(entry, "key");
         cJSON *value = cJSON_GetObjectItemCaseSensitive(entry, "value");
         cJSON *trig  = cJSON_GetObjectItemCaseSensitive(entry, "trig");
+        cJSON *keyout= cJSON_GetObjectItemCaseSensitive(entry, "keyoutput");
+        cJSON *custmkey= cJSON_GetObjectItemCaseSensitive(entry, "customkey");
         if ( !cJSON_IsNumber(idx) || !cJSON_IsString(key)|| !cJSON_IsString(value) || !cJSON_IsString(trig) )
         {
             printf("Error in json entry(invalid data type)\n");
@@ -338,7 +353,15 @@ int parseJsonConfig(const char* conffile,std::deque<TrigEntry> &TriggerList)
             return -1;
         }
         else
-            TriggerList.push_back(TrigEntry(idx->valueint,key->valuestring,value->valuestring,trig->valuestring));
+        {
+            std::string keyoutstr="";
+            std::string custmstr="";
+            if(cJSON_IsString(keyout))
+                keyoutstr=keyout->valuestring;
+            if(cJSON_IsString(custmkey))
+                custmstr=custmkey->valuestring;
+            TriggerList.push_back(TrigEntry(idx->valueint,key->valuestring,value->valuestring,trig->valuestring,keyoutstr,custmstr));
+        }
     }
     cJSON_Delete(file_data);
     free(filebuffer);
