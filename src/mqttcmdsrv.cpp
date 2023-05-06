@@ -259,7 +259,7 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
                 free(topic_value);
                 return;
             }
-            if((strcmp(value->valuestring,TrigEntryList[i].Value.c_str()) == 0) || (strcmp(value->valuestring,"*") == 0) )
+            if((strcmp(value->valuestring,TrigEntryList[i].Value.c_str()) == 0) || (strcmp(TrigEntryList[i].Value.c_str(),"*") == 0) )
             {
                 std::string outstr = TrigEntryList[i].Out;
                 std::string custstr = "";
