@@ -277,7 +277,15 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
                     }
                 }
                 else
-                    system(TrigEntryList[i].Trig.c_str());//trigger the related script or command
+		{
+			if(outstr != "") //outstr was given but custstr is missing, this means, just save value->valuestring in out-file
+			{
+			    char cmdstr[1024];
+                            sprintf(cmdstr,"echo \"%s\" > %s",value->valuestring,outstr.c_str()); //e.g slider value will be passed to script as cmdline arg via file
+                            system(cmdstr);
+			}
+			system(TrigEntryList[i].Trig.c_str());//trigger the related script or command
+		}
             }
         }
     }
