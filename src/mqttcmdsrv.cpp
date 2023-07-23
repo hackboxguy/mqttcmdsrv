@@ -214,6 +214,7 @@ void exit_example(int status, int sockfd, pthread_t *client_daemon)
 
 void publish_callback(void** unused, struct mqtt_response_publish *published)
 {
+    char valuestring[1024];
     /* note that published->topic_name is NOT null-terminated (here we'll change it to a c-string) */
     char* topic_name = (char*) malloc(published->topic_name_size + 1);
     char* topic_value = (char*) malloc(published->application_message_size + 1);
@@ -253,13 +254,20 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
             cJSON *value   = cJSON_GetObjectItemCaseSensitive(pub_data, TrigEntryList[i].Key.c_str());
             if ( !cJSON_IsString(value) )
             {
-                printf("Error in json-data of %s field(invalid data type)\n",TrigEntryList[i].Key.c_str());
-                cJSON_Delete(pub_data);
-                free(topic_name);
-                free(topic_value);
-                return;
+                if ( !cJSON_IsNumber(value) )
+                {
+                    printf("Error in json-data of %s field(invalid data type)\n",TrigEntryList[i].Key.c_str());
+                    cJSON_Delete(pub_data);
+                    free(topic_name);
+                    free(topic_value);
+                    return;
+                }
+                else //its a number, just convert it to string for use in next lines
+                    sprintf(valuestring,"%d",value->valueint);
             }
-            if((strcmp(value->valuestring,TrigEntryList[i].Value.c_str()) == 0) || (strcmp(TrigEntryList[i].Value.c_str(),"*") == 0) )
+            else
+                strcpy(valuestring,value->valuestring);
+            if((strcmp(valuestring,TrigEntryList[i].Value.c_str()) == 0) || (strcmp(TrigEntryList[i].Value.c_str(),"*") == 0) )
             {
                 std::string outstr = TrigEntryList[i].Out;
                 std::string custstr = "";
@@ -278,10 +286,10 @@ void publish_callback(void** unused, struct mqtt_response_publish *published)
                 }
                 else
 		{
-			if(outstr != "") //outstr was given but custstr is missing, this means, just save value->valuestring in out-file
+			if(outstr != "") //outstr was given but custstr is missing, this means, just save valuestring in out-file
 			{
 			    char cmdstr[1024];
-                            sprintf(cmdstr,"echo \"%s\" > %s",value->valuestring,outstr.c_str()); //e.g slider value will be passed to script as cmdline arg via file
+                            sprintf(cmdstr,"echo \"%s\" > %s",valuestring,outstr.c_str()); //e.g slider value will be passed to script as cmdline arg via file
                             system(cmdstr);
 			}
 			system(TrigEntryList[i].Trig.c_str());//trigger the related script or command
